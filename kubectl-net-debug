@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+IMAGE=${1:-tazhate/k8s-debug-container:latest}
+kubectl run -it --rm --restart=Never kube-shell --image ${IMAGE} -- bash
