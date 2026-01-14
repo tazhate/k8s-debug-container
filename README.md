@@ -15,6 +15,22 @@ kubectl run -it --rm debug --image tazhate/k8s-debug-container-net -- bash
 kubectl run -it --rm debug --image tazhate/k8s-debug-container-stress -- bash
 ```
 
+## kubectl-debug Script
+
+Install helper script for easier usage:
+
+```bash
+# Install
+sudo curl -fsSL https://raw.githubusercontent.com/tazhate/k8s-debug-container/main/scripts/kubectl-debug \
+  -o /usr/local/bin/kubectl-debug && sudo chmod +x /usr/local/bin/kubectl-debug
+
+# Usage
+kubectl-debug              # minimal (default)
+kubectl-debug net          # network tools
+kubectl-debug stress       # stress testing
+kubectl-debug db -n prod   # database tools in namespace
+```
+
 ## Images
 
 | Image | Size | Use Case |
@@ -132,22 +148,6 @@ kubectl run -it --rm debug --image tazhate/k8s-debug-container-perf -- bash
 htop
 perf top
 strace -p <PID>
-```
-
-## kubectl-debug Script
-
-Install helper script for easier usage:
-
-```bash
-# Install
-sudo curl -fsSL https://raw.githubusercontent.com/tazhate/k8s-debug-container/main/scripts/kubectl-debug \
-  -o /usr/local/bin/kubectl-debug && sudo chmod +x /usr/local/bin/kubectl-debug
-
-# Usage
-kubectl-debug              # minimal (default)
-kubectl-debug net          # network tools
-kubectl-debug stress       # stress testing
-kubectl-debug db -n prod   # database tools in namespace
 ```
 
 ## Debug Ephemeral Container (K8s 1.23+)
