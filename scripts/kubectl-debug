@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+set -e
+
+REGISTRY="${KUBECTL_DEBUG_REGISTRY:-docker.io}"
+IMAGE_PREFIX="${KUBECTL_DEBUG_IMAGE_PREFIX:-tazhate/k8s-debug-container}"
+TAG="${KUBECTL_DEBUG_TAG:-latest}"
+POD_NAME="${KUBECTL_DEBUG_POD_NAME:-debug}"
+NAMESPACE="${KUBECTL_DEBUG_NAMESPACE:-}"
+
+show_help() {
+    cat << 'EOF'
+kubectl-debug - Run debug containers in Kubernetes
+
+USAGE:
+  kubectl-debug [TYPE] [OPTIONS]
+
+IMAGE TYPES:
+  minimal, min     Lightweight Alpine (~60MB) - curl, dig, jq, tcpdump
+  net, network     Network debugging (~400MB) - nmap, tcpdump, iperf3, mtr
+  db, database     Database clients (~350MB) - psql, mysql, redis-cli, mongosh
+  k8s, kubernetes  K8s tools (~500MB) - kubectl, helm, k9s, stern
+  storage, io      Storage/IO (~300MB) - fio, iotop, rclone, mc
+  perf, profile    Profiling (~350MB) - htop, strace, perf, bpfcc
+  stress, bench    Stress testing (~250MB) - stress-ng, sysbench, fio, hey
+  full, all        Everything (~1.2GB) - all tools combined
+
+OPTIONS:
+  -n, --namespace NS    Kubernetes namespace
+  -p, --pod-name NAME   Pod name (default: debug)
+  -i, --image IMAGE     Custom image (overrides type)
+  -t, --tag TAG         Image tag (default: latest)
+  -h, --help            Show this help
+
+EXAMPLES:
+  kubectl-debug                       # minimal image (default)
+  kubectl-debug net                   # network debugging
+  kubectl-debug stress                # stress testing
+  kubectl-debug db -n production      # database tools in namespace
+  kubectl-debug -i alpine             # custom image
+
+ENVIRONMENT:
+  KUBECTL_DEBUG_REGISTRY       Registry (default: docker.io)
+  KUBECTL_DEBUG_IMAGE_PREFIX   Prefix (default: tazhate/k8s-debug-container)
+  KUBECTL_DEBUG_TAG            Tag (default: latest)
+EOF
+}
+
+get_image_suffix() {
+    case "$1" in
+        net|network)      echo "net" ;;
+        db|database)      echo "db" ;;
+        k8s|kubernetes)   echo "k8s" ;;
+        storage|io)       echo "storage" ;;
+        perf|profile)     echo "perf" ;;
+        stress|bench)     echo "stress" ;;
+        full|all)         echo "full" ;;
+        minimal|min|"")   echo "minimal" ;;
+        *)                echo "" ;;
+    esac
+}
+
+IMAGE_TYPE=""
+CUSTOM_IMAGE=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -n|--namespace)
+            NAMESPACE="$2"
+            shift 2
+            ;;
+        -p|--pod-name)
+            POD_NAME="$2"
+            shift 2
+            ;;
+        -i|--image)
+            CUSTOM_IMAGE="$2"
+            shift 2
+            ;;
+        -t|--tag)
+            TAG="$2"
+            shift 2
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            show_help
+            exit 1
+            ;;
+        *)
+            IMAGE_TYPE="$1"
+            shift
+            ;;
+    esac
+done
+
+if [[ -n "$CUSTOM_IMAGE" ]]; then
+    IMAGE="$CUSTOM_IMAGE"
+else
+    SUFFIX=$(get_image_suffix "$IMAGE_TYPE")
+    if [[ -z "$SUFFIX" ]]; then
+        echo "Unknown image type: $IMAGE_TYPE" >&2
+        echo "Run 'kubectl-debug --help' for available types" >&2
+        exit 1
+    fi
+    IMAGE="${REGISTRY}/${IMAGE_PREFIX}-${SUFFIX}:${TAG}"
+fi
+
+KUBECTL_ARGS=()
+if [[ -n "$NAMESPACE" ]]; then
+    KUBECTL_ARGS+=("-n" "$NAMESPACE")
+fi
+
+echo "🚀 Starting debug pod: $POD_NAME"
+echo "📦 Image: $IMAGE"
+echo ""
+kubectl run "${KUBECTL_ARGS[@]}" -it --rm --restart=Never "$POD_NAME" --image "$IMAGE" -- bash
