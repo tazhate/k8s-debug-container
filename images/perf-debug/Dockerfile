@@ -5,6 +5,7 @@ LABEL description="Performance profiling and monitoring tools for Kubernetes"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Note: ltrace and cpuid are not available on arm64
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
@@ -14,7 +15,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     htop \
     iotop \
     strace \
-    ltrace \
     sysstat \
     linux-perf \
     bpfcc-tools \
@@ -25,7 +25,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     atop \
     nmon \
     numactl \
-    cpuid \
     stress-ng \
     sysbench \
     && rm -rf /var/lib/apt/lists/*

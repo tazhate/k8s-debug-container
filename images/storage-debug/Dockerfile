@@ -30,8 +30,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     s3cmd \
     && rm -rf /var/lib/apt/lists/*
 
-# Install rclone
-RUN curl -fsSL https://rclone.org/install.sh | bash
+# Install rclone (download binary directly, install.sh fails in CI)
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://downloads.rclone.org/rclone-current-linux-${ARCH}.zip" -o /tmp/rclone.zip && \
+    apt-get update && apt-get install -y --no-install-recommends unzip && \
+    unzip /tmp/rclone.zip -d /tmp && \
+    cp /tmp/rclone-*/rclone /usr/local/bin/ && \
+    chmod +x /usr/local/bin/rclone && \
+    rm -rf /tmp/rclone* && \
+    apt-get purge -y unzip && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 # Install MinIO client (mc)
 RUN curl -fsSL "https://dl.min.io/client/mc/release/linux-$(dpkg --print-architecture)/mc" -o /usr/local/bin/mc \
