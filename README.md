@@ -69,12 +69,12 @@ kubectl, helm, k9s, stern, kubectx, kubens, kustomize, yq, jq, bat, fzf
 
 ### storage
 ```
-fio, iotop, hdparm, smartctl, ncdu, rclone, mc (MinIO), s3cmd
+fio, iotop, hdparm, smartctl, ncdu, rclone, mc (MinIO), s3cmd, s5cmd
 ```
 
 ### perf
 ```
-htop, iotop, strace, ltrace, perf, bpfcc-tools, dstat, atop, nmon,
+htop, iotop, strace, perf, bpfcc-tools, dstat, atop, nmon,
 stress-ng, sysbench
 ```
 
@@ -122,6 +122,10 @@ kubectl run -it --rm debug --image tazhate/k8s-debug-container-storage -- bash
 # Inside container:
 fio --name=randread --rw=randread --bs=4k --size=1G --runtime=60
 ioping -c 10 /data
+
+# S3 operations with s5cmd (fast parallel transfers)
+s5cmd ls s3://my-bucket/
+s5cmd cp 's3://my-bucket/data/*' /local/
 ```
 
 ### Stress Testing
