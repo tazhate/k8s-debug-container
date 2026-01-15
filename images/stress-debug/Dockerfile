@@ -32,10 +32,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     time \
     && rm -rf /var/lib/apt/lists/*
 
-# Install hey (HTTP load generator)
+# Install hey (HTTP load generator) - build from source since S3 downloads blocked in CI
 RUN ARCH=$(dpkg --print-architecture) && \
-    curl -fsSL "https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_${ARCH}" -o /usr/local/bin/hey && \
-    chmod +x /usr/local/bin/hey
+    GO_VERSION="1.21.6" && \
+    case "$ARCH" in \
+        amd64) GO_ARCH="amd64" ;; \
+        arm64) GO_ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" -o /tmp/go.tar.gz && \
+    tar -C /usr/local -xzf /tmp/go.tar.gz && \
+    /usr/local/go/bin/go install github.com/rakyll/hey@latest && \
+    mv /root/go/bin/hey /usr/local/bin/hey && \
+    rm -rf /tmp/go.tar.gz /usr/local/go /root/go
 
 WORKDIR /root
 CMD ["bash"]
